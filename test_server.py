@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import pytest
+from urllib2 import HTTPError
 import socket
-from http_server import response_ok, response_error
+from http_server import response_ok, response_error, parse_request
 
 
 @pytest.fixture()
@@ -41,3 +42,9 @@ def test_response_ok():
 
 def test_response_error():
     assert "HTTP/1.1 500 Internal Server Error" in response_error()
+
+def test_parse_request():
+    assert parse_request("GET")
+    with pytest.raises(HTTPError):
+        assert parse_request("sdafasdf")
+        
