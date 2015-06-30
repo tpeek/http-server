@@ -33,7 +33,7 @@ def helper(client, msg):
 
 def test_client1(make_client):
     client = make_client
-    assert "HTTP/1.1 200 OK" in helper(client, "What I put here does not matter")
+    assert "HTTP/1.1 200 OK" in helper(client, "GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com")
 
 
 def test_response_ok():
@@ -43,11 +43,19 @@ def test_response_ok():
 def test_response_error():
     assert "HTTP/1.1 500 Internal Server Error" in response_error()
 
+
 def test_parse_request():
+    #  parse_request returns the resource requested.
     assert "/path/templates/thing.html" == parse_request("GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com")
+    #  Bad Method
     with pytest.raises(ValueError):
         parse_request("POST /path/thing.html HTTP/1.1\r\nHOST: www.site.com")
-    with pytest.raises(ValueError):
+    #  Bad request
+    with pytest.raises(SyntaxError):
         parse_request("asdfasdF")
-
-
+    #  Bad HTTP Version
+    with pytest.raises(SyntaxError):
+        parse_request("GET /path/templates/thing.html HTTP/1.0\r\nHOST: www.aol.com")
+    #  No Host
+    with pytest.raises(SyntaxError):
+        parse_request("GET /path/templates/thing.html HTTP/1.0\r\n")
