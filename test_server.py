@@ -8,7 +8,7 @@ from http_server import response_ok, response_error, parse_request
 
 @pytest.fixture()
 def make_client():
-    ADDR = ("127.0.0.1", 8010)
+    ADDR = ("127.0.0.1", 8000)
     client = socket.socket(
         socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_IP
     )
@@ -33,7 +33,7 @@ def helper(client, msg):
 
 def test_client1(make_client):
     client = make_client
-    assert helper(client, "What I put here does not matter") == "HTTP/1.1 200 OK <html><head><title>Success!</title></head><body><header><h1>Success!</h1></header><p>It worked</p></body></html>"
+    assert "HTTP/1.1 200 OK" in helper(client, "What I put here does not matter")
 
 
 def test_response_ok():
@@ -44,7 +44,10 @@ def test_response_error():
     assert "HTTP/1.1 500 Internal Server Error" in response_error()
 
 def test_parse_request():
-    assert parse_request("GET")
-    with pytest.raises(HTTPError):
-        assert parse_request("sdafasdf")
-        
+    assert "/path/templates/thing.html" == parse_request("GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com")
+    with pytest.raises(ValueError):
+        parse_request("POST /path/thing.html HTTP/1.1\r\nHOST: www.site.com")
+    with pytest.raises(ValueError):
+        parse_request("asdfasdF")
+
+
