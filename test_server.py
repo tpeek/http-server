@@ -17,18 +17,15 @@ def make_client():
 
 
 def helper(client, msg):
-    try:
-        client.sendall(msg)
-        client.shutdown(socket.SHUT_WR)
-        response = ""
-        while True:
-            part = client.recv(16)
-            response += part
-            if len(part) < 16:
-                client.close()
-                return response
-    except Exception as e:
-        print e
+    client.sendall(msg)
+    client.shutdown(socket.SHUT_WR)
+    response = ""
+    while True:
+        part = client.recv(16)
+        response += part
+        if len(part) < 16:
+            client.close()
+            return response
 
 
 def test_client1(make_client):
@@ -37,7 +34,7 @@ def test_client1(make_client):
 
 
 def test_response_ok():
-    assert "HTTP/1.1 200 OK" in response_ok()
+    assert "HTTP/1.1 200 OK" in response_ok()[0:14]
 
 
 def test_response_error():
