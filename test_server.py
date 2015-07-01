@@ -34,18 +34,14 @@ def test_client1(make_client):
 
 
 def test_response_ok():
-<<<<<<< HEAD
     assert "HTTP/1.1 200 OK" in response_ok()[0:14]
-
-=======
     response = response_ok()
     head, content = response.split("\r\n\r\n", 1)
     lines = head.split("\r\n")
-    assert "HTTP/1.1 200 OK" == lines[0] 
+    assert "HTTP/1.1 200 OK" == lines[0]
     assert "Content-Type" in lines[1]
     assert "Content-Length" in lines[2]
-    
->>>>>>> b336f42389c1ca28683308c03eba409afe1ea19f
+
 
 def test_response_error():
     assert "HTTP/1.1 500 Internal Server Error" in response_error()
