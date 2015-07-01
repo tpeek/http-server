@@ -37,11 +37,17 @@ def test_client1(make_client):
 
 
 def test_response_ok():
-    assert "HTTP/1.1 200 OK" in response_ok()
-
+    response = response_ok()
+    head, content = response.split("\r\n\r\n", 1)
+    lines = head.split("\r\n")
+    assert "HTTP/1.1 200 OK" == lines[0] 
+    assert "Content-Type" in lines[1]
+    assert "Content-Length" in lines[2]
+    
 
 def test_response_error():
     assert "HTTP/1.1 500 Internal Server Error" in response_error()
+    assert "HTTP/1.1 400 Bad Request" in response_error(SyntaxError("400 Bad Request"))
 
 
 def test_parse_request():
