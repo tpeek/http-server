@@ -11,14 +11,13 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 def parse_request(request):
     try:
         request = request.split("\r\n\r\n", 1)
-        req = request[0]
+        req = request[0].split("\r\n")
         for i, r in enumerate(req):
             req[i] = r.split()
         method = req[0][0].upper()
         uri = req[0][1]
         proto = req[0][2].upper()
         headers = {}
-
         for line in req[1:]:
             headers[line[0].upper()] = line[1:]
         if method == "GET":
@@ -59,7 +58,6 @@ if __name__ == "__main__":
                 msg = conn.recv(16)
                 s += msg
                 if len(msg) < 16:
-
                     break
             print s
             try:
