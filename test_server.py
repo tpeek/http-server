@@ -17,18 +17,15 @@ def make_client():
 
 
 def helper(client, msg):
-    try:
-        client.sendall(msg)
-        client.shutdown(socket.SHUT_WR)
-        response = ""
-        while True:
-            part = client.recv(16)
-            response += part
-            if len(part) < 16:
-                client.close()
-                return response
-    except Exception as e:
-        print e
+    client.sendall(msg)
+    client.shutdown(socket.SHUT_WR)
+    response = ""
+    while True:
+        part = client.recv(16)
+        response += part
+        if len(part) < 16:
+            client.close()
+            return response
 
 
 def test_client1(make_client):
