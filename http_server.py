@@ -10,21 +10,20 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 def parse_request(request):
     try:
-        req = request.split("\r\n")
+        request = request.split("\r\n\r\n", 1)
+        req = request[0]
         for i, r in enumerate(req):
             req[i] = r.split()
         method = req[0][0].upper()
-        res = req[0][1]
+        uri = req[0][1]
         proto = req[0][2].upper()
         headers = {}
 
         for line in req[1:]:
-            if line[0][0] == "<":
-                break
             headers[line[0].upper()] = line[1:]
         if method == "GET":
             if proto == "HTTP/1.1" and "HOST:" in headers:
-                return res
+                return uri
             else:
                 raise SyntaxError("400 Bad Request")
         else:
@@ -65,12 +64,14 @@ if __name__ == "__main__":
             print s
             try:
                 parse_request(s)
-                conn.sendall(response_ok())
-                conn.close()
-            except Exception as e:
-                conn.sendall(response_error(e))
+                resp = response_ok()
+            except (SyntaxError, ValueError) as e:
+                resp = response_error(e)
         except KeyboardInterrupt as e:
             break
         except Exception as e:
             # print e
-            conn.sendall(response_error())
+            resp = response_error()
+
+        conn.sendall(resp)
+        conn.close()
