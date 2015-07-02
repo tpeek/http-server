@@ -74,7 +74,7 @@ def response_error(e=Exception("500 Internal Server Error")):
     html = "<html><head><title>Error!</title></head><body><header><h1>Error!</h1></header><p>It did not work</p></body></html>"
     return ("HTTP/1.1 " + e.message + "\r\n"
             "Content-Type: text/plain\r\n"
-            "Content-Length: " + str(len(html)) + "\r\n"
+            "Content-Length: " + str(sys.getsizeof(html)) + "\r\n"
             "\r\n" + html)
 
 
