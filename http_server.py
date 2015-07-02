@@ -1,11 +1,25 @@
 import socket
+import os
 #  from urllib2 import HTTPError
 
+ROOT = "./webroot"
 ADDR = ("127.0.0.1", 8000)
 server = socket.socket(
     socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_IP
 )
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+
+def resolve_uri(uri):
+    if os.path.isfile(uri):
+        TYPE = uri.split(".")[-1]
+        BODY = open(uri).read()
+    elif os.path.isdir(uri):
+        pass
+    else:
+        raise IOError("404 Not Found")
+
+    return TYPE, BODY
 
 
 def parse_request(request):
