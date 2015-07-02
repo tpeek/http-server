@@ -3,7 +3,7 @@
 import pytest
 from urllib2 import HTTPError
 import socket
-from http_server import response_ok, response_error, parse_request
+from http_server import response_ok, response_error, parse_request, resolve_uri
 
 
 @pytest.fixture()
@@ -30,12 +30,13 @@ def helper(client, msg):
 
 def test_client1(make_client):
     client = make_client
-    assert "HTTP/1.1 200 OK" in helper(client, "GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com\r\n\r\n")
+    assert "HTTP/1.1 200 OK" in helper(client, "GET ./.. HTTP/1.1\r\nHOST: www.site.com\r\n\r\n")
 
 
 def test_response_ok():
-    assert "HTTP/1.1 200 OK" in response_ok()[0:14]
-    response = response_ok()
+    response = response_ok("text/html", "<html></html>")
+    assert "HTTP/1.1 200 OK" in response[:15]
+    print response
     head, content = response.split("\r\n\r\n", 1)
     lines = head.split("\r\n")
     assert "HTTP/1.1 200 OK" == lines[0]
@@ -50,7 +51,7 @@ def test_response_error():
 
 def test_parse_request():
     #  parse_request returns the resource requested.
-    assert "/path/templates/thing.html" == parse_request("GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com\r\n\r\n<html>stuff</html>")
+    assert "./webroot/" + "/path/templates/thing.html" == parse_request("GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com\r\n\r\n<html>stuff</html>")
     #  Bad Method
     with pytest.raises(ValueError):
         parse_request("POST /path/thing.html HTTP/1.1\r\nHOST: www.site.com")
@@ -63,3 +64,14 @@ def test_parse_request():
     #  No Host
     with pytest.raises(SyntaxError):
         parse_request("GET /path/templates/thing.html HTTP/1.0\r\n")
+
+
+def test_resolve_uri():
+    uri = parse_request("GET ./ HTTP/1.1\r\nHOST: www.site.com\r\n\r\n<html>stuff</html>")
+    assert "text/html" in resolve_uri(uri)
+    with pytest.raises(UserWarning):
+        resolve_uri("./../../../")
+    with pytest.raises(IOError):
+        resolve_uri("~")
+    with pytest.raises(IOError):
+        resolve_uri("./cat.gif")
