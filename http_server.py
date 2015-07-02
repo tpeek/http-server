@@ -2,6 +2,7 @@ import socket
 import os
 import sys
 
+
 ROOT = "./webroot/"
 ADDR = ("127.0.0.1", 8000)
 server = socket.socket(

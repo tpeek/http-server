@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-
 import pytest
-from urllib2 import HTTPError
 import socket
 from http_server import response_ok, response_error, parse_request, resolve_uri
 
