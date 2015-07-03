@@ -75,3 +75,36 @@ def response_error(e=Exception("500 Internal Server Error")):
             "Content-Type: text/plain\r\n"
             "Content-Length: {}\r\n"
             "\r\n{}").format(e.message, str(sys.getsizeof(html)), html)
+
+
+def run_http_server():
+    server.bind(ADDR)
+    server.listen(1)
+    while True:
+        try:
+            conn, addr = server.accept()
+            s, msg = "", True
+            while msg:
+                msg = conn.recv(1024)
+                s += msg
+                if len(msg) < 1024:
+                    break
+            print s
+            try:
+                uri = parse_request(s)
+                TYPE, BODY = resolve_uri(uri)
+                resp = response_ok(TYPE, BODY)
+            except (SyntaxError, ValueError, UserWarning) as e:
+                resp = response_error(e)
+        except KeyboardInterrupt as e:
+            break
+        except Exception as e:
+            # print e
+            resp = response_error()
+
+        conn.sendall(resp)
+        conn.close()
+
+
+if __name__ == "__main__":
+    run_http_server()
