@@ -1,10 +1,15 @@
 import os
 import sys
 import mimetypes
+import socket
 
 
 ROOT = "./webroot/"
 ADDR = ("127.0.0.1", 8000)
+server = socket.socket(
+    socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_IP
+)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
 def resolve_uri(uri):
