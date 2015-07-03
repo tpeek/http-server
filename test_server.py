@@ -44,7 +44,9 @@ def parse_helper(request):
 
 def test_client1(make_client):
     client = make_client
-    assert "HTTP/1.1 200 OK" in helper(client, "GET ./.. HTTP/1.1\r\nHOST: www.site.com\r\n\r\n")
+    resp = helper(client, "GET . HTTP/1.1\r\nHOST: www.site.com\r\n\r\n")
+    print resp
+    assert "HTTP/1.1 200 OK" in resp
 
 
 def test_response_ok():

@@ -2,19 +2,17 @@ import socket
 import os
 import sys
 import mimetypes
+import select
 
 
 ROOT = "./webroot/"
 ADDR = ("127.0.0.1", 8000)
-server = socket.socket(
-    socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_IP
-)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
 
 
 def resolve_uri(uri):
     uri = os.path.join(ROOT, uri)
-    if "../" in uri:
+    if ".." in uri:
         raise UserWarning("403 Forbidden")
 
     if os.path.isfile(uri):
@@ -82,29 +80,74 @@ def response_error(e=Exception("500 Internal Server Error")):
             "\r\n{}").format(e.message, str(sys.getsizeof(html)), html)
 
 
-if __name__ == "__main__":
-    server.bind(ADDR)
-    server.listen(1)
-    while True:
-        try:
-            conn, addr = server.accept()
-            s, msg = "", True
-            while msg:
-                msg = conn.recv(1024)
-                s += msg
-                if len(msg) < 1024:
-                    break
-            print s
+def run_server(adr):
+    serv_sock = socket.socket(
+        socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_IP
+    )
+    serv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    serv_sock.bind(ADDR)
+    serv_sock.listen(5)
+    input = [serv_sock, sys.stdin]
+    msgs = {}
+    running = True
+    while running:
+        read_ready, write_ready, except_ready = select.select(input, [], [], 0)
+        for readable in read_ready:
+            if readable is serv_sock:
+                hand_sock, adr = readable.accept()
+                input.append(hand_sock)
+                msgs[id(hand_sock)] = ""
+            elif readable is sys.stdin:
+                sys.stdin.readline()
+                running = False
+            else:
+                s = echo(readable, msgs[id(readable)])
+                if type(s) == list:
+                    msgs[id(readable)] += s[0]
+                else:
+                    readable.sendall(s)
+                    input.remove(readable)
+    serv_sock.close()
+
+
+def echo(sock, s):
+    try:
+        msg = sock.recv(1024)
+        s += msg
+        if msg == "":
             try:
                 uri = parse_request(s)
                 ctype, body = resolve_uri(uri)
                 resp = response_ok(ctype, body)
             except (SyntaxError, ValueError, UserWarning) as e:
                 resp = response_error(e)
-        except KeyboardInterrupt as e:
-            break
-        except Exception as e:
-            resp = response_error()
+        else:
+            return [s]
+    except Exception as e:
+        resp = response_error()
+    return resp
 
-        conn.sendall(resp)
-        conn.close()
+if __name__ == "__main__":
+    run_server(ADDR)
+            # try:
+            #     conn, addr = server.accept()
+            #     s, msg = "", True
+            #     while msg:
+            #         msg = conn.recv(1024)
+            #         s += msg
+            #         if len(msg) < 1024:
+            #             break
+            #     print s
+            #     try:
+            #         uri = parse_request(s)
+            #         ctype, body = resolve_uri(uri)
+            #         resp = response_ok(ctype, body)
+            #     except (SyntaxError, ValueError, UserWarning) as e:
+            #         resp = response_error(e)
+            # except KeyboardInterrupt as e:
+            #     break
+            # except Exception as e:
+            #     resp = response_error()
+
+            # conn.sendall(resp)
+            # conn.close()
