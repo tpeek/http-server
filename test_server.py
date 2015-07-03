@@ -78,11 +78,14 @@ def test_parse_request():
         parse_request("GET /path/templates/thing.html HTTP/1.0\r\n")
 
 
+def test_security():
+    with pytest.raises(UserWarning):
+        resolve_uri("./../../../")
+
+
 def test_resolve_uri():
     uri = parse_request("GET ./ HTTP/1.1\r\nHOST: www.site.com\r\n\r\n<html>stuff</html>")
     assert "text/html" in resolve_uri(uri)
-    with pytest.raises(UserWarning):
-        resolve_uri("./../../../")
     with pytest.raises(IOError):
         resolve_uri("~")
     with pytest.raises(IOError):
