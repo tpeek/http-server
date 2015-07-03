@@ -16,8 +16,8 @@ def resolve_uri(uri):
         raise UserWarning("403 Forbidden")
 
     if os.path.isfile(uri):
-        TYPE = uri.split(".")[-1].lower()
-        if TYPE in ('PNG', 'JPG', 'JPEG', 'GIF'):
+        TYPE = os.path.splitext(uri)[-1][1:].lower()
+        if TYPE in ('png', 'jpg', 'jpeg', 'gif'):
             TYPE = 'image/' + TYPE
         else:
             TYPE = 'text/' + TYPE
