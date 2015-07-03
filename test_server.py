@@ -49,7 +49,7 @@ def test_response_error():
 
 def test_parse_request():
     #  parse_request returns the resource requested.
-    assert "./webroot/" + "/path/templates/thing.html" == parse_request("GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com\r\n\r\n<html>stuff</html>")
+    assert "/path/templates/thing.html" == parse_request("GET /path/templates/thing.html HTTP/1.1\r\nHOST: www.site.com\r\n\r\n<html>stuff</html>")
     #  Bad Method
     with pytest.raises(ValueError):
         parse_request("POST /path/thing.html HTTP/1.1\r\nHOST: www.site.com")

@@ -1,6 +1,7 @@
 import socket
 import os
 import sys
+import mimetypes
 
 
 ROOT = "./webroot/"
@@ -12,31 +13,31 @@ server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 
 def resolve_uri(uri):
+    uri = os.path.join(ROOT, uri)
     if "../" in uri:
         raise UserWarning("403 Forbidden")
 
     if os.path.isfile(uri):
-        TYPE = os.path.splitext(uri)[-1][1:].lower()
-        if TYPE in ('png', 'jpg', 'jpeg', 'gif'):
-            TYPE = 'image/' + TYPE
-        else:
-            TYPE = 'text/' + TYPE
-        BODY = open(uri).read()
+        ctype = mimetypes.guess_type(uri, strict=True)[0]
+        body = open(uri).read()
 
     elif os.path.isdir(uri):
-        TYPE = "text/html"
-        BODY = "<!DOCTYPE HTML><html><head><title>Directory</title></head><h1>Directory</h1>"
+        ctype = "text/html"
+        body = "<!DOCTYPE HTML><html><head><title>Directory</title></head><h1>Directory</h1>"
         for root, dirs, files in os.walk(uri):
-            BODY += "<h3>" + root + "</h3>"
-            BODY += "<ul>"
+            body += "<h3>{}</h3><ul>".format(root)
             for f in files:
-                BODY += "<li>" + f + "</li>"
-            BODY += "</ul>"
-        BODY += "</body></html>"
+                body += "<li>{}</li>".format(f)
+            body += "</ul><ul>"
+            for d in dirs:
+                body += "<li>{}</li>".format(d)
+            body += "</ul>"
+
+        body += "</body></html>"
 
     else:
         raise IOError("404 Not Found")
-    return TYPE, BODY
+    return ctype, body
 
 
 def parse_request(request):
@@ -53,7 +54,7 @@ def parse_request(request):
             headers[line[0].upper()] = line[1:]
         if method == "GET":
             if proto == "HTTP/1.1" and "HOST:" in headers:
-                return ROOT + uri
+                return uri
             else:
                 raise SyntaxError("400 Bad Request")
         else:
@@ -62,20 +63,23 @@ def parse_request(request):
         raise SyntaxError("400 Bad Request")
 
 
-def response_ok(TYPE, BODY):
+def response_ok(ctype, body):
 
     return ("HTTP/1.1 200 OK\r\n"
-            "Content-Type: " + TYPE + "\r\n"
-            "Content-Length: " + str(sys.getsizeof(BODY)) + "\r\n"
-            "\r\n" + BODY)
+            "Content-Type: {}\r\n"
+            "Content-Length: {}\r\n"
+            "\r\n{}").format(ctype,  str(sys.getsizeof(body)), body)
 
 
 def response_error(e=Exception("500 Internal Server Error")):
-    html = "<html><head><title>Error!</title></head><body><header><h1>Error!</h1></header><p>It did not work</p></body></html>"
-    return ("HTTP/1.1 " + e.message + "\r\n"
+    html = ("<html><head><title>Error!</title></head>"
+            "<body><header><h1>Error!</h1></header>"
+            "<p>{}</p></body></html>").format(e.message)
+
+    return ("HTTP/1.1 {}\r\n"
             "Content-Type: text/plain\r\n"
-            "Content-Length: " + str(sys.getsizeof(html)) + "\r\n"
-            "\r\n" + html)
+            "Content-Length: {}\r\n"
+            "\r\n{}").format(e.message, str(sys.getsizeof(html)), html)
 
 
 if __name__ == "__main__":
@@ -93,14 +97,13 @@ if __name__ == "__main__":
             print s
             try:
                 uri = parse_request(s)
-                TYPE, BODY = resolve_uri(uri)
-                resp = response_ok(TYPE, BODY)
+                ctype, body = resolve_uri(uri)
+                resp = response_ok(ctype, body)
             except (SyntaxError, ValueError, UserWarning) as e:
                 resp = response_error(e)
         except KeyboardInterrupt as e:
             break
         except Exception as e:
-            # print e
             resp = response_error()
 
         conn.sendall(resp)
