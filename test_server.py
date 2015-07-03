@@ -26,20 +26,34 @@ def helper(client, msg):
             return response
 
 
+def parse_helper(request):
+    request = request.split("\r\n\r\n", 1)
+    req = request[0].split("\r\n")
+    for i, r in enumerate(req):
+        req[i] = r.split()
+    proto = req[0][0]
+    print proto
+    code = req[0][1]+" "+req[0][2]
+    headers = {}
+    for line in req[1:]:
+        headers[line[0].upper()] = line[1:]
+    d = {'code': code, 'proto': proto, 'headers': headers}
+    d.update(headers)
+    return d
+
+
 def test_client1(make_client):
     client = make_client
     assert "HTTP/1.1 200 OK" in helper(client, "GET ./.. HTTP/1.1\r\nHOST: www.site.com\r\n\r\n")
 
 
 def test_response_ok():
-    response = response_ok("text/html", "<html></html>")
-    assert "HTTP/1.1 200 OK" in response[:15]
-    print response
-    head, content = response.split("\r\n\r\n", 1)
-    lines = head.split("\r\n")
-    assert "HTTP/1.1 200 OK" == lines[0]
-    assert "Content-Type" in lines[1]
-    assert "Content-Length" in lines[2]
+    response_dict = parse_helper(response_ok("text/html", "<html></html>"))
+    assert "HTTP/1.1" == response_dict['proto']
+    assert "200 OK" == response_dict['code']
+    assert "CONTENT-TYPE:" in response_dict
+    assert "text/html" == response_dict["CONTENT-TYPE:"][0]
+    assert "CONTENT-LENGTH:" in response_dict
 
 
 def test_response_error():
